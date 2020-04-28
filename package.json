@@ -19,7 +19,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev": "react-scripts start",
-    "sever": "node ./sever/authorization_code/app.js"
+    "sever": "node ./authSever/sever.js"
   },
   "eslintConfig": {
     "extends": "react-app"
