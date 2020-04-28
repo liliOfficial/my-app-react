@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useReducer } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -111,15 +111,22 @@ export default function Main() {
                     <div className="popup-box">
                         <div className="popup-content p-3">
                             <h4>Click to select a playlist to add</h4>
-                            {!playlists &&
-                                <h2 >Please create a playlist first.</h2>
+                            {playlists.length === 0 &&
+                                <div>
+                                    <h2>Do not have playlist yet.</h2>
+                                    <div>
+                                        Go to
+                                        <a href="https://open.spotify.com" target="_blank"> my accout </a>
+                                        to create one.
+                                    </div>
+                                </div>
                             }
-                            {playlists &&
+                            {
                                 playlists.map(playlist => {
                                     return (
                                         <div key={playlist.id} onClick={() => selectPlaylist(playlist.id)}
                                             className="playlist"
-                                            style={{ color: selectedPlaylistId == playlist.id ? 'green' : '#484848' }}>
+                                            style={{ color: selectedPlaylistId == playlist.id ? '#484848' : '#888' }}>
                                             {playlist.name}
                                         </div>
                                     );

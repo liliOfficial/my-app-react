@@ -8,11 +8,6 @@ var client_id = 'd3c8da4aea0f4deeada5c79c48ec5ed2'; // Your client id
 var client_secret = '40d6f56ed2a243549c2c4743441cbff5'; // Your secret
 var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 
-/**
- * Generates a random string containing numbers and letters
- * @param  {number} length The length of the string
- * @return {string} The generated string
- */
 var generateRandomString = function(length) {
   var text = '';
   var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
