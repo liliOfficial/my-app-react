@@ -50,6 +50,7 @@ export default function Main() {
 
         try {
             let result = await axios(`${httpEndpoint}`);
+            console.log(result.data);
             setPlaylists(result.data.items);
         } catch (e) { errorHandler(e); }
     }
@@ -77,7 +78,7 @@ export default function Main() {
 
         try {
             let result = await axios(`${httpEndpoint}?q=${keywords}&type=${type}&limite=${limit}&offset=${offset}`);
-            console.log(result.data);
+
             setSearchList(result.data);
             const newPagination = { ...pagination, total: result.data.tracks.total, currentPage: num };
             setPagination(newPagination);
