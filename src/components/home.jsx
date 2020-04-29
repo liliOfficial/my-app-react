@@ -7,6 +7,7 @@ import errorHandler from '../services/errorHandler';
 
 import Playlists from './playlist';
 import Pagination from './common/pagination';
+import AddPopup from './addPopup';
 
 export default function Main() {
 
@@ -22,11 +23,9 @@ export default function Main() {
         step: 20
     });
 
-    const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
     const [selectedSong, setSelectedSong] = useState('');
 
     const inputKeywords = (e) => setKeywords(e.target.value);
-    const selectPlaylist = (id) => setSelectedPlaylistId(id);
     const popupShowStatus = (status) => setPopupShow(status);
 
     const selectSong = (uris) => {
@@ -52,7 +51,7 @@ export default function Main() {
         try {
             let result = await axios(`${httpEndpoint}`);
             setPlaylists(result.data.items);
-        } catch (e) {errorHandler(e);}
+        } catch (e) { errorHandler(e); }
     }
 
     const creatPlaylist = async (name) => {
@@ -74,7 +73,7 @@ export default function Main() {
         const httpEndpoint = `https://api.spotify.com/v1/search`;
         const type = `track`;
         const limit = pagination.step;
-        const offset = limit * pagination.currentPage;
+        const offset = (pagination.currentPage - 1) * limit;
 
         try {
             let result = await axios(`${httpEndpoint}?q=${keywords}&type=${type}&limite=${limit}&offset=${offset}`);
@@ -82,24 +81,7 @@ export default function Main() {
             setSearchList(result.data);
             const newPagination = { ...pagination, total: result.data.tracks.total, currentPage: num };
             setPagination(newPagination);
-        } catch (e) {errorHandler(e);}
-    }
-
-    const addToPlaylist = async () => {
-        let urisArr = [];
-        urisArr.push(selectedSong);
-
-        const data = { 'uris': urisArr };
-        const httpEndpoint = `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`;
-
-        try {
-            let result = await axios.post(`${httpEndpoint}`, data);
-            if (result.data.snapshot_id) {
-                setPopupShow(false);
-                setSelectedPlaylistId('');
-                toast.success(`Successfully added to the playlist`, {});
-            }
-        } catch (e) {errorHandler(e);}
+        } catch (e) { errorHandler(e); }
     }
 
     useEffect(() => {
@@ -110,41 +92,12 @@ export default function Main() {
     return (
         <div className="container my-3">
             {popupShow &&
-                <div className="popup">
-                    <div className="popup-box">
-                        <div className="popup-content p-3">
-                            <h4>Click to select a playlist to add</h4>
-                            {playlists.length === 0 &&
-                                <div>
-                                    <h2>No playlist yet.</h2>
-                                    <div>Please create one to add in.</div>
-                                </div>
-                            }
-                            {
-                                playlists.map(playlist => {
-                                    return (
-                                        <div key={playlist.id} onClick={() => selectPlaylist(playlist.id)}
-                                            className="playlist"
-                                            style={{ color: selectedPlaylistId == playlist.id ? '#484848' : '#888' }}>
-                                            {playlist.name}
-                                        </div>
-                                    );
-                                })
-                            }
-                            <button type="button" className="btn btn-dark btn-sm" onClick={addToPlaylist} disabled={!selectedPlaylistId}>
-                                Add to playlist
-                            </button>
-                            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => popupShowStatus(false)}>
-                                Cancle
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <AddPopup playlists={playlists} popupShowStatus={popupShowStatus} selectedSong={selectedSong} />
             }
 
             <div className="row">
                 <div className="col-md-4">
-                    <Playlists playlists={playlists} creatPlaylist={creatPlaylist} fetchPlaylist={fetchPlaylist} />
+                    <Playlists playlists={playlists} creatPlaylist={creatPlaylist} />
                 </div>
 
                 <div className="col-md-8">
@@ -160,8 +113,8 @@ export default function Main() {
                     {pagination.total > 0 && keywords &&
                         <div className="mt-3">
                             <Pagination
-                                startNum={(pagination.currentPage - 1) * pagination.step}
-                                endNum={pagination.currentPage * pagination.step}
+                                startNum={(pagination.currentPage - 1) * pagination.step + 1}
+                                endNum={Math.min(pagination.currentPage * pagination.step, pagination.total)}
                                 totalNum={pagination.total}
                                 currentPage={pagination.currentPage}
                                 totalPage={pagination.total / pagination.step}

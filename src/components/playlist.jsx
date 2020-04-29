@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 export default function Playlists(props) {
-    const { playlists, creatPlaylist, fetchPlaylist } = props;
+    const { playlists, creatPlaylist} = props;
 
     const [name, setName] = useState('');
     const inputName = (e) => setName(e.target.value);
