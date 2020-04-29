@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useReducer } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import errorHandler from './errorHandler';
 
 import Playlists from './playlist';
+import Pagination from './common/pagination';
 
 export default function Main() {
     const [popupShow, setPopupShow] = useState(false);
@@ -15,6 +16,11 @@ export default function Main() {
 
     const [keywords, setKeywords] = useState('');
     const [searchList, setSearchList] = useState(null);
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        total: null,
+        step: 20
+    });
 
     const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
     const [selectedSong, setSelectedSong] = useState('');
@@ -51,25 +57,26 @@ export default function Main() {
         try {
             let result = await axios(`${httpEndpoint}`);
             setPlaylists(result.data.items);
-
         } catch (e) {
             errorHandler(e);
         }
-
     }
 
-    const search = async () => {
+    const search = async (num) => {
 
         if (!keywords) return setSearchList(null);
 
         const httpEndpoint = `https://api.spotify.com/v1/search`;
         const type = `track`;
+        const limit = pagination.step;
+        const offset = limit * pagination.currentPage;
 
         try {
-            let result = await axios(`${httpEndpoint}?q=${keywords}&type=${type}`);
+            let result = await axios(`${httpEndpoint}?q=${keywords}&type=${type}&limite=${limit}&offset=${offset}`);
             console.log(result.data);
             setSearchList(result.data);
-
+            const newPagination = { ...pagination, total: result.data.tracks.total, currentPage: num };
+            setPagination(newPagination);
         } catch (e) {
             errorHandler(e);
         }
@@ -91,7 +98,6 @@ export default function Main() {
                 setSelectedPlaylistId('');
                 toast.success(`Successfully added to the playlist`, {});
             }
-            console.log(result);
 
         } catch (e) {
             errorHandler(e);
@@ -152,10 +158,24 @@ export default function Main() {
                     <div className="input-group">
                         <input type="text" className="form-control" placeholder="Search for songs" value={keywords} onChange={inputKeywords} />
                         <div className="input-group-append" id="button-addon4">
-                            <button className="btn btn-outline-secondary" type="button" onClick={search}>Search</button>
+                            <button className="btn btn-outline-secondary" type="button" onClick={() => search(1)}>Search</button>
                         </div>
                     </div>
-
+                    {pagination.total === 0 &&
+                        <h4 className="mt-3">No result match!</h4>
+                    }
+                    {pagination.total > 0 &&
+                        <div className="mt-3">
+                            <Pagination
+                                startNum={(pagination.currentPage - 1) * pagination.step}
+                                endNum={pagination.currentPage * pagination.step}
+                                totalNum={pagination.total}
+                                currentPage={pagination.currentPage}
+                                totalPage={pagination.total / pagination.step}
+                                changeCurrentPage={search}
+                            />
+                        </div>
+                    }
                     {searchList &&
                         Object.keys(searchList).map(type => {
                             return (
