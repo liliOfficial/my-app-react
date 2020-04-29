@@ -3,14 +3,14 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import errorHandler from './errorHandler';
+import errorHandler from '../services/errorHandler';
 
 import Playlists from './playlist';
 import Pagination from './common/pagination';
 
 export default function Main() {
+
     const [popupShow, setPopupShow] = useState(false);
-    let userId;
 
     const [playlists, setPlaylists] = useState(null);
 
@@ -35,35 +35,40 @@ export default function Main() {
     }
 
     const initData = async () => {
-
         const params = new URLSearchParams(window.location.search);
         const accessToken = params.get("access_token");
-        userId = params.get("user_id");
+        const userId = params.get("user_id");
+        sessionStorage.setItem('userId', userId);
 
-        if (!accessToken) {
-            window.location.href = "http://localhost:8888";
-        }
+        if (!accessToken) return window.location.href = "http://localhost:8888";
 
         axios.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken;
         axios.defaults.headers.post['Content-Type'] = 'application/json';
-
-        fetchPlaylist();
-
     }
 
-    const fetchPlaylist = async () => {
-        const httpEndpoint = `https://api.spotify.com/v1/users/${userId}/playlists`;
+    const fetchPlaylist = async (id) => {
+        const httpEndpoint = `https://api.spotify.com/v1/users/${sessionStorage.getItem('userId')}/playlists`;
 
         try {
             let result = await axios(`${httpEndpoint}`);
             setPlaylists(result.data.items);
-        } catch (e) {
-            errorHandler(e);
-        }
+        } catch (e) {errorHandler(e);}
+    }
+
+    const creatPlaylist = async (name) => {
+        const httpEndpoint = `https://api.spotify.com/v1/users/${sessionStorage.getItem('userId')}/playlists`;
+        const data = { 'name': name };
+
+        try {
+            let result = await axios.post(`${httpEndpoint}`, data);
+            if (result.data.snapshot_id) {
+                toast.success(`Successfully created the playlist`, {});
+                fetchPlaylist();
+            }
+        } catch (e) { errorHandler(e); }
     }
 
     const search = async (num) => {
-
         if (!keywords) return setSearchList(null);
 
         const httpEndpoint = `https://api.spotify.com/v1/search`;
@@ -77,11 +82,7 @@ export default function Main() {
             setSearchList(result.data);
             const newPagination = { ...pagination, total: result.data.tracks.total, currentPage: num };
             setPagination(newPagination);
-        } catch (e) {
-            errorHandler(e);
-        }
-
-
+        } catch (e) {errorHandler(e);}
     }
 
     const addToPlaylist = async () => {
@@ -98,16 +99,12 @@ export default function Main() {
                 setSelectedPlaylistId('');
                 toast.success(`Successfully added to the playlist`, {});
             }
-
-        } catch (e) {
-            errorHandler(e);
-        }
-
-
+        } catch (e) {errorHandler(e);}
     }
 
     useEffect(() => {
         initData();
+        fetchPlaylist();
     }, []);
 
     return (
@@ -119,12 +116,8 @@ export default function Main() {
                             <h4>Click to select a playlist to add</h4>
                             {playlists.length === 0 &&
                                 <div>
-                                    <h2>Do not have playlist yet.</h2>
-                                    <div>
-                                        Go to
-                                        <a href="https://open.spotify.com" target="_blank"> my accout </a>
-                                        to create one.
-                                    </div>
+                                    <h2>No playlist yet.</h2>
+                                    <div>Please create one to add in.</div>
                                 </div>
                             }
                             {
@@ -138,7 +131,7 @@ export default function Main() {
                                     );
                                 })
                             }
-                            <button type="button" className="btn btn-dark btn-sm" onClick={() => addToPlaylist()} disabled={!selectedPlaylistId}>
+                            <button type="button" className="btn btn-dark btn-sm" onClick={addToPlaylist} disabled={!selectedPlaylistId}>
                                 Add to playlist
                             </button>
                             <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => popupShowStatus(false)}>
@@ -151,20 +144,20 @@ export default function Main() {
 
             <div className="row">
                 <div className="col-md-4">
-                    <Playlists playlists={playlists} />
+                    <Playlists playlists={playlists} creatPlaylist={creatPlaylist} fetchPlaylist={fetchPlaylist} />
                 </div>
 
                 <div className="col-md-8">
                     <div className="input-group">
                         <input type="text" className="form-control" placeholder="Search for songs" value={keywords} onChange={inputKeywords} />
-                        <div className="input-group-append" id="button-addon4">
+                        <div className="input-group-append">
                             <button className="btn btn-outline-secondary" type="button" onClick={() => search(1)}>Search</button>
                         </div>
                     </div>
                     {pagination.total === 0 &&
                         <h4 className="mt-3">No result match!</h4>
                     }
-                    {pagination.total > 0 &&
+                    {pagination.total > 0 && keywords &&
                         <div className="mt-3">
                             <Pagination
                                 startNum={(pagination.currentPage - 1) * pagination.step}
